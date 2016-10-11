@@ -10,10 +10,14 @@ import android.os.Bundle;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.GoogleApiClient.OnConnectionFailedListener;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.places.Places;
 import com.google.android.gms.location.places.ui.PlacePicker;
 import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.maps.LocationSource;
+
 import android.Manifest;
 import android.util.Log;
 import android.widget.TextView;
@@ -31,6 +35,8 @@ public  class MainMenu extends AppCompatActivity implements GoogleApiClient.OnCo
     @Override
     public void onConnected(Bundle connectionHint) {
         Log.d(TAG, "Connection Established");
+        Location pPlace = getLocation();
+        locationString(pPlace);
     }
 
     //When connection is lost it tries to reconnect
@@ -58,13 +64,13 @@ public  class MainMenu extends AppCompatActivity implements GoogleApiClient.OnCo
         } else {
             googleApiClient.connect(); //connects to google play
         }
-
+        /*
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
         } else {
             Location pPlace = getLocation();
             locationString(pPlace);
-        }
+        }*/
     }
 
     @Override
@@ -72,7 +78,7 @@ public  class MainMenu extends AppCompatActivity implements GoogleApiClient.OnCo
         if (reqCode == 1) {
             if (results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED) {
                 Location pPlace = getLocation();
-
+                locationString(pPlace);
             }
         }
     }
@@ -100,12 +106,12 @@ public  class MainMenu extends AppCompatActivity implements GoogleApiClient.OnCo
 
 
     private GoogleApiClient googleApiClient;
+    //private LocationRequest requestloc;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main_menu);
-
 
         googleApiClient = new GoogleApiClient
                 .Builder(this)
@@ -116,12 +122,12 @@ public  class MainMenu extends AppCompatActivity implements GoogleApiClient.OnCo
                 .addConnectionCallbacks(this)
                 .build();
 
+
         test = (TextView) findViewById(R.id.testbox);
         //sets up a placepicker
         //nearby();
         //Location loc = getLocation();
         //test.setText("Lat: " +loc.getLatitude()+" Long: " +loc.getLongitude());
-
     }
 
     public void nearby() {
@@ -145,10 +151,11 @@ public  class MainMenu extends AppCompatActivity implements GoogleApiClient.OnCo
         }
     }
 
+
     public void locationString(Location loc){
         if(loc != null)
         {
-            test.setText("Lat: " +loc.getLatitude()+" Long: " +loc.getLongitude());
+            test.setText("Lat: " +String.valueOf(loc.getLatitude())+" Long: " +String.valueOf(loc.getLongitude()));
         }
             //test.setText("hello from the other side");
     }

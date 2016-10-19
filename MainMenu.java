@@ -1,7 +1,9 @@
 package pickyeater.pickyeaterandroid;
 
 import android.content.pm.PackageManager;
+import android.graphics.drawable.Drawable;
 import android.location.Location;
+import android.os.StrictMode;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -13,6 +15,7 @@ import com.google.android.gms.common.api.GoogleApiClient.OnConnectionFailedListe
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.places.Place;
 import com.google.android.gms.location.places.Places;
 import com.google.android.gms.location.places.ui.PlacePicker;
 import com.google.android.gms.common.ConnectionResult;
@@ -22,11 +25,32 @@ import android.Manifest;
 import android.util.Log;
 import android.widget.TextView;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.util.ArrayList;
+
+import javax.net.ssl.HttpsURLConnection;
+
 //Main Menu class, implements failures to connect to Google Play Services
 public  class MainMenu extends AppCompatActivity implements GoogleApiClient.OnConnectionFailedListener, GoogleApiClient.ConnectionCallbacks
 {
     //sets up a test textbox
     private TextView test;
+    public int searchRadius = 1000;
+    public double latP;
+    public double longP;
+    public String type = "restaurant";
+    private String APIkey = "AIzaSyD0wuYcL5-fir9uciCfaZXLSb2IIM8_RB0";
+    public String location;
 
     //Console Tag for Error Identification
     private final String TAG = "PlayServices";
@@ -34,11 +58,100 @@ public  class MainMenu extends AppCompatActivity implements GoogleApiClient.OnCo
     //When Google Play Connects, logs to console
     @Override
     public void onConnected(Bundle connectionHint) {
+        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+        StrictMode.setThreadPolicy(policy);
+
+        ArrayList<Place> nearbyRest = null;
+
+
         Log.d(TAG, "Connection Established");
         Location pPlace = getLocation();
-        locationString(pPlace);
+        if (pPlace != null){
+            latP = getLat(pPlace);
+            longP = getLong(pPlace);
+            location = String.valueOf(latP)+","+String.valueOf(longP);
+        }
+
+        TextView test = (TextView) findViewById(R.id.testbox);
+        test.setText(location);
+
+        StringBuilder jsonResults = new StringBuilder();
+
+        StringBuilder jsonUrl = new StringBuilder("https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=");
+        jsonUrl.append(location);
+        jsonUrl.append("&radius=");
+        jsonUrl.append(searchRadius);
+        jsonUrl.append("&type=");
+        jsonUrl.append(type);
+        jsonUrl.append("&key=");
+        jsonUrl.append(APIkey);
+
+        HttpURLConnection conn = null;
+        try {
+            URL address = new URL(jsonUrl.toString());
+            conn = (HttpsURLConnection) address.openConnection();
+            InputStreamReader in = new InputStreamReader(conn.getInputStream());
+
+            int read;
+            char[] buff = new char[1024];
+            while((read = in.read(buff)) != -1)
+            {
+                jsonResults.append(buff, 0, read);
+            }
+        }
+        catch (MalformedURLException e)
+        {
+            Log.i("URL", "Error, bad Url");
+        }
+        catch (IOException e)
+        {
+            Log.i("IO", "IO exception caught");
+        }
+        finally
+        {
+            if(conn!=null)
+            conn.disconnect();
+        }
+
+        try {
+            JSONObject restObj = new JSONObject(jsonResults.toString());
+            JSONArray restArray = restObj.getJSONArray("results");
+            nearbyRest =  new ArrayList<Place>(restArray.length());
+            //for(int i = 0; i<restArray.length(); i++)
+            test.setText(restArray.getJSONObject(randomizer(restArray.length())).getString("name"));
+        }
+        catch(JSONException e)
+        {
+            Log.i("JSON", "JSON error");
+        }
     }
 
+    public int randomizer(int length){
+        return (int)(length*Math.random());
+    }
+
+    //gets an image from a place search
+    public static Drawable LoadImageFromWeb(int maxwidht, String reference, String APIkey){
+        StringBuilder url = new StringBuilder("https://maps.googleapis.com/maps/api/place/photo?maxwidth=");
+        url.append(maxwidht);
+        url.append("&photoreference=");
+        url.append(reference);
+        url.append("&key=");
+        url.append(APIkey);
+        try {
+            InputStream is = (InputStream) new URL(url.toString()).getContent();
+            Drawable d = Drawable.createFromStream(is, "src");
+            return d;
+        }
+        catch(MalformedURLException e){
+            Log.i("URL","Bad Url");
+            return null;
+        }
+        catch(IOException e){
+            Log.i("IO", "IO Exception");
+            return null;
+        }
+    }
     //When connection is lost it tries to reconnect
     @Override
     public void onConnectionSuspended(int cause) {
@@ -73,12 +186,16 @@ public  class MainMenu extends AppCompatActivity implements GoogleApiClient.OnCo
         }*/
     }
 
+    //requests permissions to get your coordinates
     @Override
     public void onRequestPermissionsResult(int reqCode, String[] perms, int[] results) {
         if (reqCode == 1) {
             if (results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED) {
                 Location pPlace = getLocation();
-                locationString(pPlace);
+                if (pPlace != null){
+                    latP = getLat(pPlace);
+                    longP = getLong(pPlace);
+                }
             }
         }
     }
@@ -104,6 +221,10 @@ public  class MainMenu extends AppCompatActivity implements GoogleApiClient.OnCo
         Log.i(TAG, "Resuming Google Play");
     }
 
+   // public JSONObject nearbyPlaces(){
+
+   // }
+
 
     private GoogleApiClient googleApiClient;
     //private LocationRequest requestloc;
@@ -124,22 +245,6 @@ public  class MainMenu extends AppCompatActivity implements GoogleApiClient.OnCo
 
 
         test = (TextView) findViewById(R.id.testbox);
-        //sets up a placepicker
-        //nearby();
-        //Location loc = getLocation();
-        //test.setText("Lat: " +loc.getLatitude()+" Long: " +loc.getLongitude());
-    }
-
-    public void nearby() {
-        int PLACE_PICKER_REQUEST = 1;
-        PlacePicker.IntentBuilder builder = new PlacePicker.IntentBuilder();
-        try {
-            startActivityForResult(builder.build(this), PLACE_PICKER_REQUEST);
-        } catch (com.google.android.gms.common.GooglePlayServicesRepairableException e) {
-            //test.setText("Error with Google Play Services");
-        } catch (com.google.android.gms.common.GooglePlayServicesNotAvailableException e) {
-            //test.setText("Error with Google Play Services");
-        }
     }
 
     public Location getLocation() {
@@ -151,12 +256,12 @@ public  class MainMenu extends AppCompatActivity implements GoogleApiClient.OnCo
         }
     }
 
-
-    public void locationString(Location loc){
-        if(loc != null)
-        {
-            test.setText("Lat: " +String.valueOf(loc.getLatitude())+" Long: " +String.valueOf(loc.getLongitude()));
+    public double getLat(Location loc){
+            return loc.getLatitude();
         }
-            //test.setText("hello from the other side");
+
+    public double getLong(Location loc){
+            return loc.getLongitude();
     }
+
 }

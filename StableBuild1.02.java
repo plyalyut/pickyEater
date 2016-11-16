@@ -3,15 +3,15 @@ package pickyeater.pickyeaterandroid;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.Path;
-import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.LayerDrawable;
 import android.location.Location;
 import android.os.StrictMode;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+
 //Google Play functionality
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -19,14 +19,13 @@ import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.places.Places;
 import com.google.android.gms.common.ConnectionResult;
 
-import android.support.v7.widget.LinearLayoutCompat;
+
 import android.util.Log;
 
-import android.util.StringBuilderPrinter;
+
 import android.view.Display;
 import android.view.View;
 import android.widget.Button;
-import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -57,6 +56,7 @@ public  class MainMenu extends AppCompatActivity implements GoogleApiClient.OnCo
     private int randomRes1;
     private int randomRes2;
 
+    //getting the dimensions of the screen
     int width;
     int height;
 
@@ -66,18 +66,19 @@ public  class MainMenu extends AppCompatActivity implements GoogleApiClient.OnCo
     //jsonArray for the restaurant results
     JSONArray restArray;
 
-    public int searchRadius = 1000; //how far do you want to search
+    public final int searchRadius = 50000; //how far do you want to search
     public double latP;//coordinate for the person's latitude
     public double longP;//coordinate for the person's longitude
-    public String type = "restaurant";
-    private String APIkey = "AIzaSyD0wuYcL5-fir9uciCfaZXLSb2IIM8_RB0"; //our API key ### GET AN ACTUAL KEY UPON RELEASE
+    public final String type = "restaurant";
+    private final String APIkey = "AIzaSyD0wuYcL5-fir9uciCfaZXLSb2IIM8_RB0"; //our API key ### GET AN ACTUAL KEY UPON RELEASE
     //private String APIkey = "AIzaSyC8sTME_6ujyMOiA690lldcUr7FrcAKtLY"; //backup key for teting purposes
     public String location; //latitude & longitude displayed for ##testing purposes
 
     //Console Tag for Error Identification
     private final String TAG = "PlayServices"; //error log identifier
 
-    private final int smallImageRes = 500; //resolution for downloaded images
+    private final int largeImageRes = 500; //resolution for downloaded images (default)
+    private final int smallImageRes = 200; //resolution for downloaded images (if cannot load large)
 
     //When Google Play Connects, logs to console
     @Override
@@ -120,99 +121,169 @@ public  class MainMenu extends AppCompatActivity implements GoogleApiClient.OnCo
         jsonUrl.append("&key=");
         jsonUrl.append(APIkey);
 
-        jsonResults=createJSON(jsonUrl);
+        jsonResults = createJSON(jsonUrl);
 
         JSONObject restObj;
-        Boolean hasNext=true;
+        Boolean hasNext = true;
 
         nearbyRest = new ArrayList<>();
-            do{
-                try {
-                    restObj = new JSONObject(jsonResults.toString());
-                    restArray = restObj.getJSONArray("results");
-                    hasNext=restObj.has("next_page_token");
+        do {
+            try {
+                restObj = new JSONObject(jsonResults.toString());
+                restArray = restObj.getJSONArray("results");
+                hasNext = restObj.has("next_page_token");
 
-                    for (int i = 0; i < restArray.length(); i++) {
-                        Place place = new Place();
-                        place.name = restArray.getJSONObject(i).getString("name");
-                        try {
-                            JSONArray photos = restArray.getJSONObject(i).getJSONArray("photos");
-                            place.photoImage = photos.getJSONObject(0).getString("photo_reference");
-                        } catch (JSONException e) {
-                            Log.i("JSON", "JSON Photo Error");
-                        }
-                        nearbyRest.add(place);
+                for (int i = 0; i < restArray.length(); i++) {
+                    Place place = new Place();
+                    place.name = restArray.getJSONObject(i).getString("name");
+                    try {
+                        JSONArray photos = restArray.getJSONObject(i).getJSONArray("photos");
+                        place.photoImage = photos.getJSONObject(0).getString("photo_reference");
+                    } catch (JSONException e) {
+                        Log.i("JSON", "JSON Photo Error");
                     }
-                    if(hasNext){
-                        String nextPage = restObj.getString("next_page_token");
-                        jsonUrl = new StringBuilder("https://maps.googleapis.com/maps/api/place/nearbysearch/json?pagetoken=");
-                        jsonUrl.append(nextPage);
-                        jsonUrl.append("&key=");
-                        jsonUrl.append(APIkey);
-                        jsonResults = createJSON(jsonUrl);
-                    }
+                    nearbyRest.add(place);
                 }
-                catch (JSONException e){
-                    Log.i("JSON", "JSON main error");
+                if (hasNext) {
+                    String nextPage = restObj.getString("next_page_token");
+                    jsonUrl = new StringBuilder("https://maps.googleapis.com/maps/api/place/nearbysearch/json?pagetoken=");
+                    jsonUrl.append(nextPage);
+                    jsonUrl.append("&key=");
+                    jsonUrl.append(APIkey);
+                    jsonResults = createJSON(jsonUrl);
                 }
-            }while(hasNext);
-
-            randomRes1 = randomizer(nearbyRest.size());
-            randomRes2 = randomizer(nearbyRest.size());
-            while (randomRes1 == randomRes2) {
-                randomRes2 = randomizer(nearbyRest.size());
+            } catch (JSONException e) {
+                Log.i("JSON", "JSON main error");
             }
+        } while (hasNext);
 
-            resTitle1.setText(nearbyRest.get(randomRes1).name);
-            resTitle2.setText(nearbyRest.get(randomRes2).name);
-            Bitmap phot1 = ((BitmapDrawable) LoadImageFromWeb(smallImageRes, nearbyRest.get(randomRes1).photoImage, APIkey)).getBitmap();
-            resImage1.setImageBitmap(getRoundedShape(phot1));
-            Bitmap phot2 = ((BitmapDrawable) LoadImageFromWeb(smallImageRes, nearbyRest.get(randomRes2).photoImage, APIkey)).getBitmap();
-            resImage2.setImageBitmap(getRoundedShape(phot2));
-/*
-            resImage1.setMaxHeight(width/3);
-            resImage1.setMaxWidth(width/3);
 
-            resImage2.setMaxHeight(width/3);
-            resImage2.setMaxWidth(width/3);*/
-/*
-            resImage1.setX(0-100);
-            resImage1.setY(height/4);
-            resImage2.setX(0);
-            resImage2.setY(height/2);
+        randomRes1 = randomizer(nearbyRest.size());
+        randomRes2 = randomizer(nearbyRest.size());
+        while (randomRes1 == randomRes2) {
+            randomRes2 = randomizer(nearbyRest.size());
+        }
 
-            resTitle1.setX(width/4);
-            resTitle1.setY(height/2);*/
+        loadRes(smallImageRes,largeImageRes, randomRes1, randomRes2, APIkey);
+        resImage1.setOnClickListener(new View.OnClickListener()
+        {
+            @Override
+            public void onClick(View v){
+                Drawable[] layers = new Drawable[2];
+                layers[0] = resImage1.getDrawable();
+                layers[1] = getResources().getDrawable(R.drawable.check);
+                layers[1].setAlpha(200);
+                LayerDrawable intermedaiteSelected = new LayerDrawable(layers);
+                Drawable selected = getSingleDrawable(intermedaiteSelected);
+                //Bitmap phot1 = ((BitmapDrawable) selected).getBitmap();
+                //resImage1.setImageBitmap(getRoundedShape(phot1));
+                resImage1.setImageDrawable(selected);
 
-            Button reroll = (Button) findViewById(R.id.reroll);
-            //reroll.setX(width/2);
-            reroll.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    
-                    if(randomRes1>randomRes2) {
-                        nearbyRest.remove(randomRes1);
-                        nearbyRest.remove(randomRes2);
-                    }
-                    else
-                    {
-                        nearbyRest.remove(randomRes2);
-                        nearbyRest.remove(randomRes1);
-                    }
-                    randomRes1 = randomizer(nearbyRest.size());
-                    randomRes2 = randomizer(nearbyRest.size());
-                    while (randomRes1 == randomRes2) {
-                        randomRes2 = randomizer(nearbyRest.size());
-                    }
-                    resTitle1.setText(nearbyRest.get(randomRes1).name);
-                    resTitle2.setText(nearbyRest.get(randomRes2).name);
-                    Bitmap phot1 = ((BitmapDrawable) LoadImageFromWeb(smallImageRes, nearbyRest.get(randomRes1).photoImage, APIkey)).getBitmap();
-                    resImage1.setImageBitmap(getRoundedShape(phot1));
-                    Bitmap phot2 = ((BitmapDrawable) LoadImageFromWeb(smallImageRes, nearbyRest.get(randomRes2).photoImage, APIkey)).getBitmap();
-                    resImage2.setImageBitmap(getRoundedShape(phot2));
+            }
+        }
+        );
+        /*
+        resTitle1.setText(nearbyRest.get(randomRes1).name);
+        resTitle2.setText(nearbyRest.get(randomRes2).name);
+        Bitmap phot1 = ((BitmapDrawable) LoadImageFromWeb(smallImageRes, nearbyRest.get(randomRes1).photoImage, APIkey)).getBitmap();
+        resImage1.setImageBitmap(getRoundedShape(phot1));
+        Bitmap phot2 = ((BitmapDrawable) LoadImageFromWeb(smallImageRes, nearbyRest.get(randomRes2).photoImage, APIkey)).getBitmap();
+        resImage2.setImageBitmap(getRoundedShape(phot2));*/
+
+        Button reroll = (Button) findViewById(R.id.reroll);
+        //reroll.setX(width/2);
+        reroll.setOnClickListener(new View.OnClickListener()
+
+        {
+            @Override
+            public void onClick (View v){
+            if (nearbyRest.size() > 4) {
+                if (randomRes1 > randomRes2) {
+                    nearbyRest.remove(randomRes1);
+                    nearbyRest.remove(randomRes2);
+                } else {
+                    nearbyRest.remove(randomRes2);
+                    nearbyRest.remove(randomRes1);
                 }
-            });
+                randomRes1 = randomizer(nearbyRest.size());
+                randomRes2 = randomizer(nearbyRest.size());
+                while (randomRes1 == randomRes2) {
+                    randomRes2 = randomizer(nearbyRest.size());
+                }
+                resTitle1.setText(nearbyRest.get(randomRes1).name);
+                resTitle2.setText(nearbyRest.get(randomRes2).name);
+
+                loadRes(smallImageRes,largeImageRes, randomRes1, randomRes2, APIkey);
+
+                /*Drawable[] layers = new Drawable[2];
+                layers[0] = LoadImageFromWeb(smallImageRes, nearbyRest.get(randomRes1).photoImage, APIkey);
+                layers[1] = getResources().getDrawable(R.drawable.check);
+                layers[1].setAlpha(200);
+                LayerDrawable intermedaiteSelected = new LayerDrawable(layers);
+                Drawable selected = getSingleDrawable(intermedaiteSelected);*/
+                //Bitmap phot1 = ((BitmapDrawable) selected).getBitmap();
+                //resImage1.setImageBitmap(getRoundedShape(phot1));
+
+                //resImage1.setImageDrawable(selected);
+                //resImage1.setImageDrawable(layers[0]);
+                //Bitmap phot2 = ((BitmapDrawable) LoadImageFromWeb(smallImageRes, nearbyRest.get(randomRes2).photoImage, APIkey)).getBitmap();
+                //resImage2.setImageBitmap(getRoundedShape(phot2));
+                //Drawable phot2 = LoadImageFromWeb(smallImageRes, nearbyRest.get(randomRes2).photoImage, APIkey);
+                //resImage2.setImageDrawable(phot2);
+
+            } else {
+                resTitle1.setText("Error, too small data set!");
+            }
+        }});
     }
+
+
+    public void loadRes(int smallImageRes,int largeImageRes, int randomRes1, int randomRes2, String APIkey){
+        Drawable phot1;
+        Drawable phot2;
+
+        resTitle1.setText(nearbyRest.get(randomRes1).name);
+        resTitle2.setText(nearbyRest.get(randomRes2).name);
+
+        if (LoadImageFromWeb(largeImageRes, nearbyRest.get(randomRes1).photoImage, APIkey)!=null
+            && LoadImageFromWeb(largeImageRes, nearbyRest.get(randomRes2).photoImage, APIkey)!=null
+            ) {
+                phot1 = LoadImageFromWeb(largeImageRes, nearbyRest.get(randomRes1).photoImage, APIkey);
+                        //((BitmapDrawable) LoadImageFromWeb(largeImageRes, nearbyRest.get(randomRes1).photoImage, APIkey)).getBitmap();
+                //resImage1.setImageBitmap(getRoundedShape(phot1));
+                resImage1.setImageDrawable(phot1);
+                phot2 = LoadImageFromWeb(largeImageRes, nearbyRest.get(randomRes2).photoImage, APIkey);
+                        //((BitmapDrawable) LoadImageFromWeb(largeImageRes, nearbyRest.get(randomRes2).photoImage, APIkey)).getBitmap();
+                //resImage2.setImageBitmap(getRoundedShape(phot2));
+                resImage2.setImageDrawable(phot2);
+        }
+        else if(LoadImageFromWeb(smallImageRes, nearbyRest.get(randomRes1).photoImage, APIkey)!=null
+                && LoadImageFromWeb(smallImageRes, nearbyRest.get(randomRes2).photoImage, APIkey)!=null
+        ) {
+            phot1 = LoadImageFromWeb(largeImageRes, nearbyRest.get(randomRes1).photoImage, APIkey);
+                    //((BitmapDrawable) LoadImageFromWeb(smallImageRes, nearbyRest.get(randomRes1).photoImage, APIkey)).getBitmap();
+            //resImage1.setImageBitmap(getRoundedShape(phot1));
+            resImage1.setImageDrawable(phot1);
+            phot2 = LoadImageFromWeb(largeImageRes, nearbyRest.get(randomRes2).photoImage, APIkey);
+                    //((BitmapDrawable) LoadImageFromWeb(smallImageRes, nearbyRest.get(randomRes2).photoImage, APIkey)).getBitmap();
+            //resImage2.setImageBitmap(getRoundedShape(phot2));
+            resImage2.setImageDrawable(phot2);
+        }
+        else{
+            if(LoadImageFromWeb(smallImageRes, nearbyRest.get(randomRes1).photoImage, APIkey)==null){
+                phot1 = getResources().getDrawable(R.drawable.lost);
+                        //((BitmapDrawable) getResources().getDrawable(R.drawable.lost)).getBitmap();
+                //resImage1.setImageBitmap(getRoundedShape(phot1));
+                resImage1.setImageDrawable(phot1);
+            }
+            if(LoadImageFromWeb(smallImageRes, nearbyRest.get(randomRes2).photoImage, APIkey)==null){
+                phot2 =  getResources().getDrawable(R.drawable.lost);
+                        //((BitmapDrawable) getResources().getDrawable(R.drawable.lost)).getBitmap();
+                //resImage2.setImageBitmap(getRoundedShape(phot2));
+                resImage2.setImageDrawable(phot2);
+            }
+        }}
+
 
 
     public StringBuilder createJSON(StringBuilder URL){
@@ -248,6 +319,7 @@ public  class MainMenu extends AppCompatActivity implements GoogleApiClient.OnCo
         }
 
     }
+    /*
     public Bitmap getRoundedShape(Bitmap scaleBitmapImage) {
         int targetWidth = 1200;
         int targetHeight = 1200;
@@ -269,8 +341,32 @@ public  class MainMenu extends AppCompatActivity implements GoogleApiClient.OnCo
                         sourceBitmap.getHeight()),
                 new Rect(0, 0, targetWidth, targetHeight), null);
         return targetBitmap;
-    }
+    }*/
 
+    public Drawable getSingleDrawable(LayerDrawable layerDrawable){
+
+        int resourceBitmapHeight = 1200, resourceBitmapWidth = 1200;
+
+        float widthInInches = 1.0f;
+
+        int widthInPixels = (int)(widthInInches * getResources().getDisplayMetrics().densityDpi);
+        int heightInPixels = (int)(widthInPixels * resourceBitmapHeight / resourceBitmapWidth);
+
+        int insetLeft = 0, insetTop = 0, insetRight = 0, insetBottom = 0;
+
+        layerDrawable.setLayerInset(1, insetLeft, insetTop, insetRight, insetBottom);
+
+        Bitmap bitmap = Bitmap.createBitmap(widthInPixels, heightInPixels, Bitmap.Config.ARGB_8888);
+
+        Canvas canvas = new Canvas(bitmap);
+        layerDrawable.setBounds(0, 0, widthInPixels, heightInPixels);
+        layerDrawable.draw(canvas);
+
+        BitmapDrawable bitmapDrawable = new BitmapDrawable(getResources(), bitmap);
+        bitmapDrawable.setBounds(0, 0, widthInPixels, heightInPixels);
+
+        return bitmapDrawable;
+    }
     public int randomizer(int length){
         return (int)(length*Math.random());
     }
@@ -322,13 +418,7 @@ public  class MainMenu extends AppCompatActivity implements GoogleApiClient.OnCo
         } else {
             googleApiClient.connect(); //connects to google play
         }
-        /*
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
-        } else {
-            Location pPlace = getLocation();
-            locationString(pPlace);
-        }*/
+
     }
 
     //requests permissions to get your coordinates
@@ -366,13 +456,8 @@ public  class MainMenu extends AppCompatActivity implements GoogleApiClient.OnCo
         Log.i(TAG, "Resuming Google Play");
     }
 
-   // public JSONObject nearbyPlaces(){
-
-   // }
-
-
     private GoogleApiClient googleApiClient;
-    //private LocationRequest requestloc;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -396,6 +481,7 @@ public  class MainMenu extends AppCompatActivity implements GoogleApiClient.OnCo
         resImage1 = (ImageView) findViewById(R.id.resIm);
     }
 
+    //
     public Location getLocation() {
         try {
             Location findUser = LocationServices.FusedLocationApi.getLastLocation(googleApiClient);
@@ -404,13 +490,4 @@ public  class MainMenu extends AppCompatActivity implements GoogleApiClient.OnCo
             return null;
         }
     }
-/*
-    public double getLat(Location loc){
-            return loc.getLatitude();
-        }
-
-    public double getLong(Location loc){
-            return loc.getLongitude();
-    }
-*/
 }

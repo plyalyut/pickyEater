@@ -26,9 +26,21 @@
       <file leaf-file-name="MainMenu.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/MainMenu.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="5698">
-              <caret line="303" column="34" selection-start-line="303" selection-start-column="34" selection-end-line="303" selection-end-column="34" />
+            <state relative-caret-position="244">
+              <caret line="79" column="86" selection-start-line="79" selection-start-column="83" selection-end-line="79" selection-end-column="86" />
               <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="BitmapMem.java" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/BitmapMem.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="0">
+              <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+              <folding>
+                <element signature="imports" expanded="false" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -52,7 +64,7 @@
   </component>
   <component name="ProjectFrameBounds">
     <option name="x" value="96" />
-    <option name="width" value="1400" />
+    <option name="width" value="1544" />
     <option name="height" value="1000" />
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="true">
@@ -345,7 +357,7 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="96" y="0" width="1400" height="1000" extended-state="0" />
+    <frame x="96" y="0" width="1544" height="1000" extended-state="0" />
     <editor active="true" />
     <layout>
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
@@ -534,8 +546,26 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/MainMenu.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="5698">
-          <caret line="303" column="34" selection-start-line="303" selection-start-column="34" selection-end-line="303" selection-end-column="34" />
+        <state relative-caret-position="0">
+          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/BitmapMem.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="imports" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/MainMenu.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="244">
+          <caret line="79" column="86" selection-start-line="79" selection-start-column="83" selection-end-line="79" selection-end-column="86" />
           <folding />
         </state>
       </provider>

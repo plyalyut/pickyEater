@@ -86,7 +86,7 @@ public  class MainMenu extends AppCompatActivity implements GoogleApiClient.OnCo
 
     private final int largeImageRes = 300; //resolution for downloaded images (default)
     private final int smallImageRes = 200; //resolution for downloaded images (if cannot load large)
-    private final int imageResInDP = 120;
+    private final int imageResInDP = 170;
     private int imageResInPx;
 
 
@@ -211,11 +211,9 @@ public  class MainMenu extends AppCompatActivity implements GoogleApiClient.OnCo
 
         BitmapMem betImage = new BitmapMem();
         imageResInPx=(int)betImage.convertDpToPixel(imageResInDP, getApplicationContext());
-        betImage.decodeSampledBitmapFromResource(getResources(), R.drawable.die, imageResInPx, imageResInPx);
+        Drawable die = new BitmapDrawable(betImage.decodeSampledBitmapFromResource(getResources(), R.drawable.die, imageResInPx, imageResInPx));
 
-
-
-        reroll.setImageDrawable(getResources().getDrawable(R.drawable.die));
+        reroll.setImageDrawable(die);
         //reroll.setX(width/2);
         reroll.setOnClickListener(new View.OnClickListener()
 
